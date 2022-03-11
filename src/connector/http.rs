@@ -54,11 +54,13 @@ impl HttpConnector {
             None => return Err(ConnectError::new("invalid URI: missing scheme")),
         }
         let host = get_host(&uri)?;
-        let port = match uri.port_u16() {
-            Some(p) => p,
-            None if uri.scheme_str() == Some("http") => DEFAULT_HTTP_PORT,
-            _ => DEFAULT_HTTPS_PORT,
-        };
+        let port = uri.port_u16().unwrap_or_else(|| {
+            if uri.scheme_str() == Some("http") {
+                DEFAULT_HTTP_PORT
+            } else {
+                DEFAULT_HTTPS_PORT
+            }
+        });
         let stream = TcpStream::connect((host, port))
             .await
             .map_err(|e| ConnectError::new("I/O error").cause(e))?;

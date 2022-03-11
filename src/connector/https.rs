@@ -19,7 +19,10 @@ use std::io;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-/// An HTTPS connector using native-tls
+/// An HTTPS connector using native-tls.
+///
+/// TLS use is enforced by default. To allow plain `http` URIs call
+/// [`fn allow_http_scheme()`].
 pub struct HttpsConnector {
     force_tls: bool,
     tls: TlsConnector,
@@ -29,13 +32,14 @@ impl HttpsConnector {
     pub fn new(tls: TlsConnector) -> Self {
         HttpsConnector {
             tls,
-            force_tls: false,
+            force_tls: true,
         }
     }
 
-    /// If called, the connector will ensure the URLs have the `https` scheme.
-    pub fn force_tls(mut self) -> Self {
-        self.force_tls = true;
+    /// If called, the connector will allow URIs with the `http` scheme.
+    /// Otherwise only URIs with the `https` scheme are allowed.
+    pub fn allow_http_scheme(mut self) -> Self {
+        self.force_tls = false;
         self
     }
 
@@ -81,7 +85,7 @@ impl NetworkConnector for HttpsConnector {
     }
 }
 
-/// An HTTP of HTTPS connection
+/// An HTTP or HTTPS connection
 pub enum HttpOrHttpsConnection {
     Http(HttpConnection),
     Https(TlsStream<TcpStream>),

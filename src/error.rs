@@ -4,12 +4,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+use hyper::Method;
+
 use std::{error, fmt};
 
 #[derive(Debug)]
 pub enum Error {
     Http(http::Error),
     Hyper(hyper::Error),
+    BodyNotAllowed(Method),
 }
 
 impl From<http::Error> for Error {
@@ -29,6 +32,9 @@ impl fmt::Display for Error {
         match *self {
             Error::Http(ref e) => write!(f, "{}", e),
             Error::Hyper(ref e) => write!(f, "{}", e),
+            Error::BodyNotAllowed(ref m) => {
+                write!(f, "{} requests are not allowed to have a body", m)
+            }
         }
     }
 }
@@ -38,6 +44,7 @@ impl error::Error for Error {
         match *self {
             Error::Http(ref e) => Some(e),
             Error::Hyper(ref e) => Some(e),
+            Error::BodyNotAllowed(_) => None,
         }
     }
 }

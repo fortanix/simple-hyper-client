@@ -182,6 +182,7 @@ impl RequestDetails {
                 self.headers.typed_insert(ContentLength(body.len() as u64));
                 body
             }
+            false if self.body.is_some() => return Err(Error::BodyNotAllowed(self.method)),
             false => SharedBody::empty(),
         };
         let mut req = Request::builder().method(self.method).uri(self.uri);

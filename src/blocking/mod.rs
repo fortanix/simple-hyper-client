@@ -14,7 +14,6 @@ use crate::shared_body::SharedBody;
 
 mod body;
 mod client;
-mod wait;
 
 pub use self::body::Body;
 pub use self::client::{Client, ClientBuilder, RequestBuilder};

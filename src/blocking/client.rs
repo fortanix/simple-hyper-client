@@ -5,13 +5,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use super::body::Body;
-use super::wait::wait;
 use super::Response;
 use crate::async_client::{ClientBuilder as AsyncClientBuilder, RequestDetails};
 use crate::connector::NetworkConnector;
 use crate::error::Error;
 use crate::shared_body::SharedBody;
 
+use futures_executor::block_on;
 use headers::{Header, HeaderMap, HeaderMapExt};
 use hyper::{Method, Uri};
 use tokio::runtime;
@@ -223,8 +223,8 @@ impl<'a> RequestBuilder<'a> {
             .send((details, tx))
             .expect("runtime thread panicked");
 
-        // TODO: replace `wait` with `rx.blocking_recv()` once we move to tokio 1.16+
-        wait(async move {
+        // TODO: replace `block_on` with `rx.blocking_recv()` once we move to tokio 1.16+
+        block_on(async move {
             match rx.await {
                 Ok(res) => res,
                 Err(_) => panic!("event loop panicked"),
