@@ -1,3 +1,40 @@
+# Introduction
+
+This crate provides a wrapper for
+[hyper's `Client` type](https://docs.rs/hyper/latest/hyper/client/struct.Client.html)
+providing a simpler async interface as well as a blocking interface. For a more
+feature-rich HTTP client use [`reqwest`](https://crates.io/crates/reqwest) instead.
+
+**Example use:**
+
+```rust
+use simple_hyper_client::{Client, HttpConnector};
+let connector = HttpConnector::new();
+let client = Client::with_connector(connector);
+let response = client.get("http://example.com/")?.send().await?;
+```
+
+Using blocking client:
+```rust
+use simple_hyper_client::{blocking::Client, HttpConnector};
+let connector = HttpConnector::new();
+let client = Client::with_connector(connector);
+let response = client.get("http://example.com/")?.send()?;
+```
+
+There is a TLS connector available as well which can be enabled using the
+`native-tls` feature of this crate (not enabled by default):
+
+```rust
+use native_tls::TlsConnector;
+use simple_hyper_client::{Client, HttpsConnector};
+let tls = TlsConnector::new();
+let connector = HttpsConnector::new(tls.into());
+let client = Client::with_connector(connector);
+let response = client.get("https://example.com/")?.send().await?;
+```
+
+
 # Contributing
 
 We gratefully accept bug reports and contributions from the community.
