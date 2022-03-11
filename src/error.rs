@@ -33,4 +33,11 @@ impl fmt::Display for Error {
     }
 }
 
-impl error::Error for Error {}
+impl error::Error for Error {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        match *self {
+            Error::Http(ref e) => Some(e),
+            Error::Hyper(ref e) => Some(e),
+        }
+    }
+}
