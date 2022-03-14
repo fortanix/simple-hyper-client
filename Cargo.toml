@@ -1,7 +1,16 @@
 [package]
 name = "simple-hyper-client"
 version = "0.1.0"
-authors = ["Mohsen Zohrevandi <mohsen.zohrevandi@fortanix.com>"]
+authors = ["Fortanix, Inc."]
+license = "MPL-2.0"
+description = """
+A wrapper for hyper's HTTP client providing a simpler interface as well as a blocking interface
+"""
+readme = "README.md"
+repository = "https://github.com/fortanix/simple-hyper-client"
+documentation = "https://docs.rs/simple-hyper-client"
+homepage = "https://github.com/fortanix/simple-hyper-client"
+categories = ["web-programming::http-client"]
 edition = "2018"
 
 [dependencies]
@@ -18,3 +27,6 @@ futures-util = "0.3.21"
 
 [features]
 native-tls = ["tokio-native-tls"]
+
+[package.metadata.docs.rs]
+features = ["native-tls"]
