@@ -23,6 +23,16 @@ enum InnerBuf {
     Static(&'static [u8]),
 }
 
+impl AsRef<[u8]> for SharedBody {
+    fn as_ref(&self) -> &[u8] {
+        match self.0.as_ref() {
+            Some(InnerBuf::Arc(vec)) => vec,
+            Some(InnerBuf::Static(slice)) => slice,
+            None => &[],
+        }
+    }
+}
+
 impl SharedBody {
     pub fn len(&self) -> usize {
         match self.0.as_ref() {
