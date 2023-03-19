@@ -165,8 +165,12 @@ impl RequestDetails {
             body: None,
         }
     }
+    pub async fn send(self, client: &Client) -> Result<Response, Error> {
+        let req = self.into_request()?;
+        Ok(client.inner.request(req).await?)
+    }
 
-    pub async fn send(mut self, client: &Client) -> Result<Response, Error> {
+    pub fn into_request(mut self) -> Result<Request<SharedBody>, Error> {
         let can_have_body = match self.method {
             // See RFC 7231 section 4.3
             Method::GET | Method::HEAD | Method::DELETE => false,
@@ -198,8 +202,8 @@ impl RequestDetails {
                 }
             },
         }
-        let req = req.body(body)?;
-        Ok(client.inner.request(req).await?)
+
+        Ok(req.body(body)?)
     }
 }
 
@@ -207,6 +211,8 @@ impl RequestDetails {
 ///
 /// This is created through [`Client::get()`], [`Client::post()`] etc.
 /// You need to call [`send()`] to actually send the request over the network.
+/// If you don't want to send it and just want the resultant [Request], you
+/// can call [RequestBuilder::build].
 ///
 /// [`Client::get()`]: struct.Client.html#method.get
 /// [`Client::post()`]: struct.Client.html#method.post
@@ -235,6 +241,14 @@ impl<'a> RequestBuilder<'a> {
     pub fn header<H: Header>(mut self, header: H) -> Self {
         self.details.headers.typed_insert(header);
         self
+    }
+
+    /// Get the resultant [Request].
+    ///
+    /// Prefer [RequestBuilder::send] unless you have a specific
+    /// need to get the resultant [Request].
+    pub fn build(self) -> Result<Request<SharedBody>, Error> {
+        self.details.into_request()
     }
 
     /// Send the request over the network.
