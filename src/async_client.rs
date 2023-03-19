@@ -64,6 +64,12 @@ impl Client {
         ClientBuilder::new().build(connector)
     }
 
+    /// This method can be used instead of [Client::request]
+    /// if the caller already has a [Request].
+    pub async fn send(&self, request: Request<SharedBody>) -> Result<Response, Error> {
+        Ok(self.inner.request(request).await?)
+    }
+
     /// Initiate a request with the specified method and URI.
     ///
     /// Returns an error if `uri` is invalid.
