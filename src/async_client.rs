@@ -171,6 +171,7 @@ impl RequestDetails {
             body: None,
         }
     }
+
     pub async fn send(self, client: &Client) -> Result<Response, Error> {
         let req = self.into_request()?;
         Ok(client.inner.request(req).await?)
