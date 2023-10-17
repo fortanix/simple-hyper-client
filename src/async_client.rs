@@ -98,6 +98,7 @@ impl Client {
 /// A builder for [`Client`]
 ///
 /// [`Client`]: struct.Client.html
+#[derive(Clone)]
 pub struct ClientBuilder {
     max_idle_per_host: usize,
     idle_timeout: Option<Duration>,

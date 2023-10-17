@@ -108,6 +108,7 @@ impl Client {
 /// A builder for [`Client`].
 ///
 /// [`Client`]: struct.Client.html
+#[derive(Clone)]
 pub struct ClientBuilder(AsyncClientBuilder);
 
 impl ClientBuilder {
