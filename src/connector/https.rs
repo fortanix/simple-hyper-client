@@ -18,6 +18,7 @@ use std::future::Future;
 use std::io;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use std::time::Duration;
 
 /// An HTTPS connector using native-tls.
 ///
@@ -26,6 +27,7 @@ use std::task::{Context, Poll};
 pub struct HttpsConnector {
     force_tls: bool,
     tls: TlsConnector,
+    connect_timeout: Option<Duration>,
 }
 
 impl HttpsConnector {
@@ -33,7 +35,14 @@ impl HttpsConnector {
         HttpsConnector {
             tls,
             force_tls: true,
+            connect_timeout: None,
         }
+    }
+
+    /// Set the connect timeout. Default is None.
+    pub fn connect_timeout(mut self, timeout: Option<Duration>) -> Self {
+        self.connect_timeout = timeout;
+        self
     }
 
     /// If called, the connector will allow URIs with the `http` scheme.
@@ -47,13 +56,14 @@ impl HttpsConnector {
         uri: Uri,
         tls: TlsConnector,
         force_tls: bool,
+        connect_timeout: Option<Duration>,
     ) -> Result<HttpOrHttpsConnection, ConnectError> {
         let is_https = uri.scheme_str() == Some("https");
         if !is_https && force_tls {
             return Err(ConnectError::new("invalid URI: expected `https` scheme"));
         }
         let host = get_host(&uri)?.to_owned();
-        let http = HttpConnector::connect(uri, true).await?;
+        let http = HttpConnector::connect(uri, true, connect_timeout).await?;
         if is_https {
             let tls = tls
                 .connect(&host, http.stream)
@@ -76,8 +86,9 @@ impl NetworkConnector for HttpsConnector {
     > {
         let tls = self.tls.clone();
         let force_tls = self.force_tls;
+        let connect_timeout = self.connect_timeout;
         Box::pin(async move {
-            match HttpsConnector::connect(uri, tls, force_tls).await {
+            match HttpsConnector::connect(uri, tls, force_tls, connect_timeout).await {
                 Ok(conn) => Ok(NetworkConnection::new(conn)),
                 Err(e) => Err(Box::new(e) as _),
             }

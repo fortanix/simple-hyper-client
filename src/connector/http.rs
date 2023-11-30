@@ -10,6 +10,7 @@ use hyper::client::connect::{Connected, Connection};
 use hyper::Uri;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio::net::TcpStream;
+use tokio::time;
 
 use std::error::Error as StdError;
 use std::future::Future;
@@ -17,6 +18,7 @@ use std::net::Ipv6Addr;
 use std::pin::Pin;
 use std::str::FromStr;
 use std::task::{Context, Poll};
+use std::time::Duration;
 use std::{fmt, io};
 
 const DEFAULT_HTTP_PORT: u16 = 80;
@@ -29,17 +31,26 @@ const DEFAULT_HTTPS_PORT: u16 = 443;
 /// [hyper's `HttpConnector`]: https://docs.rs/hyper/0.14/hyper/client/struct.HttpConnector.html
 #[derive(Clone)]
 pub struct HttpConnector {
-    _private: (),
+    connect_timeout: Option<Duration>,
 }
 
 impl HttpConnector {
     pub fn new() -> Self {
-        HttpConnector { _private: () }
+        HttpConnector {
+            connect_timeout: None,
+        }
+    }
+
+    /// Set the connect timeout. Default is None.
+    pub fn connect_timeout(mut self, timeout: Option<Duration>) -> Self {
+        self.connect_timeout = timeout;
+        self
     }
 
     pub(super) async fn connect(
         uri: Uri,
         allow_https: bool,
+        connect_timeout: Option<Duration>,
     ) -> Result<HttpConnection, ConnectError> {
         match uri.scheme_str() {
             Some("http") => {}
@@ -61,9 +72,19 @@ impl HttpConnector {
                 DEFAULT_HTTPS_PORT
             }
         });
-        let stream = TcpStream::connect((host, port))
-            .await
-            .map_err(|e| ConnectError::new("I/O error").cause(e))?;
+        let connect = TcpStream::connect((host, port));
+        let stream = match connect_timeout {
+            Some(duration) => match time::timeout(duration, connect).await {
+                Ok(Ok(stream)) => Ok(stream),
+                Ok(Err(e)) => Err(e),
+                Err(_) => Err(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    "connection timed out",
+                )),
+            },
+            None => connect.await,
+        }
+        .map_err(|e| ConnectError::new("I/O error").cause(e))?;
 
         Ok(HttpConnection { stream })
     }
@@ -76,8 +97,9 @@ impl NetworkConnector for HttpConnector {
     ) -> Pin<
         Box<dyn Future<Output = Result<NetworkConnection, Box<dyn StdError + Send + Sync>>> + Send>,
     > {
+        let connect_timeout = self.connect_timeout;
         Box::pin(async move {
-            match Self::connect(uri, false).await {
+            match Self::connect(uri, false, connect_timeout).await {
                 Ok(conn) => Ok(NetworkConnection::new(conn)),
                 Err(e) => Err(Box::new(e) as _),
             }
