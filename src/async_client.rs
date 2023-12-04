@@ -344,4 +344,17 @@ mod tests {
         let body = to_bytes(response).await.unwrap();
         assert_eq!(body, "Resource was not found.");
     }
+
+    #[tokio::test]
+    async fn http_connector_connect_timeout() {
+        // IP address chosen from 192.0.2.0/24 block defined in RFC 5737.
+        let url = "http://192.0.2.1/";
+        let connector = HttpConnector::new().connect_timeout(Some(Duration::from_millis(100)));
+        let client = Client::with_connector(connector);
+        let err = client.get(url).unwrap().send().await.unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "error trying to connect: I/O error: connection timed out"
+        );
+    }
 }
