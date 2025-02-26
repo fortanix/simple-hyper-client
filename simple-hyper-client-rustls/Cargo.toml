@@ -1,0 +1,23 @@
+[package]
+name = "simple-hyper-client-rustls"
+version = "0.1.0"
+authors = ["Fortanix, Inc."]
+license = "MPL-2.0"
+description = """
+TLS connector implementation for simple-hyper-client using tokio-rustls
+"""
+readme = "../README.md"
+repository = "https://github.com/fortanix/simple-hyper-client"
+documentation = "https://docs.rs/simple-hyper-client-rustls"
+homepage = "https://github.com/fortanix/simple-hyper-client"
+categories = ["web-programming::http-client"]
+edition = "2018"
+
+[dependencies]
+rustls-pki-types = { version = "1.11.0" }
+simple-hyper-client = { version = "0.2.0", path = "../simple-hyper-client" }
+tokio = { version = "1.15.0", features = ["rt", "macros", "net", "sync", "time"] }
+tokio-rustls = { version = "0.26.1" }
+
+[dev-dependencies]
+env_logger = "0.11.6"

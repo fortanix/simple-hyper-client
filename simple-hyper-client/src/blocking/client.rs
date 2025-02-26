@@ -238,7 +238,7 @@ impl<'a> RequestBuilder<'a> {
     }
 }
 
-pub(super) struct KeepClientAlive(Option<Arc<ClientInner>>);
+pub(super) struct KeepClientAlive(#[allow(unused)] Option<Arc<ClientInner>>);
 
 impl KeepClientAlive {
     pub fn empty() -> Self {
