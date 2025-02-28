@@ -5,24 +5,20 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use crate::connector::{NetworkConnection, NetworkConnector};
-
+use crate::connector_impl::connect;
 use hyper::client::connect::{Connected, Connection};
 use hyper::Uri;
-use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
-use tokio::net::TcpStream;
-use tokio::time;
-
 use std::error::Error as StdError;
 use std::future::Future;
-use std::net::Ipv6Addr;
 use std::pin::Pin;
-use std::str::FromStr;
 use std::task::{Context, Poll};
 use std::time::Duration;
 use std::{fmt, io};
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
+use tokio::net::TcpStream;
 
-const DEFAULT_HTTP_PORT: u16 = 80;
-const DEFAULT_HTTPS_PORT: u16 = 443;
+pub(crate) const DEFAULT_HTTP_PORT: u16 = 80;
+pub(crate) const DEFAULT_HTTPS_PORT: u16 = 443;
 
 /// A simple HTTP connector
 ///
@@ -46,48 +42,6 @@ impl HttpConnector {
         self.connect_timeout = timeout;
         self
     }
-
-    pub(super) async fn connect(
-        uri: Uri,
-        allow_https: bool,
-        connect_timeout: Option<Duration>,
-    ) -> Result<HttpConnection, ConnectError> {
-        match uri.scheme_str() {
-            Some("http") => {}
-            Some("https") if allow_https => {}
-            Some(_) => {
-                return Err(ConnectError::new(if allow_https {
-                    "invalid URI: expected `http` or `https` scheme"
-                } else {
-                    "invalid URI: expected `http` scheme"
-                }))
-            }
-            None => return Err(ConnectError::new("invalid URI: missing scheme")),
-        }
-        let host = get_host(&uri)?;
-        let port = uri.port_u16().unwrap_or_else(|| {
-            if uri.scheme_str() == Some("http") {
-                DEFAULT_HTTP_PORT
-            } else {
-                DEFAULT_HTTPS_PORT
-            }
-        });
-        let connect = TcpStream::connect((host, port));
-        let stream = match connect_timeout {
-            Some(duration) => match time::timeout(duration, connect).await {
-                Ok(Ok(stream)) => Ok(stream),
-                Ok(Err(e)) => Err(e),
-                Err(_) => Err(io::Error::new(
-                    io::ErrorKind::TimedOut,
-                    "connection timed out",
-                )),
-            },
-            None => connect.await,
-        }
-        .map_err(|e| ConnectError::new("I/O error").cause(e))?;
-
-        Ok(HttpConnection { stream })
-    }
 }
 
 impl NetworkConnector for HttpConnector {
@@ -99,7 +53,7 @@ impl NetworkConnector for HttpConnector {
     > {
         let connect_timeout = self.connect_timeout;
         Box::pin(async move {
-            match Self::connect(uri, false, connect_timeout).await {
+            match connect(uri, false, connect_timeout).await {
                 Ok(conn) => Ok(NetworkConnection::new(conn)),
                 Err(e) => Err(Box::new(e) as _),
             }
@@ -107,31 +61,23 @@ impl NetworkConnector for HttpConnector {
     }
 }
 
-pub(super) fn get_host(uri: &Uri) -> Result<&str, ConnectError> {
-    let host = uri
-        .host()
-        .ok_or(ConnectError::new("invalid URI: missing host"))?;
-
-    if host.starts_with("[") && host.ends_with("]") {
-        let maybe_ipv6 = host.strip_prefix('[').unwrap().strip_suffix(']').unwrap();
-        if let Ok(_) = Ipv6Addr::from_str(maybe_ipv6) {
-            return Ok(maybe_ipv6);
-        }
-    }
-    Ok(host)
-}
-
 /// A wrapper around [`tokio::net::TcpStream`]
 ///
 /// [`tokio::net::TcpStream`]: https://docs.rs/tokio/1.0/tokio/net/struct.TcpStream.html
 pub struct HttpConnection {
-    pub(super) stream: TcpStream,
+    pub(crate) stream: TcpStream,
 }
 
 impl Connection for HttpConnection {
     fn connected(&self) -> Connected {
-        // TODO: provide remote address
+        // TODO(#13): provide remote address
         Connected::new()
+    }
+}
+
+impl HttpConnection {
+    pub fn into_tcp_stream(self) -> TcpStream {
+        self.stream
     }
 }
 
@@ -205,34 +151,5 @@ impl fmt::Display for ConnectError {
 impl StdError for ConnectError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         self.cause.as_ref().map(|e| &**e as _)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn get_host_correctness() {
-        assert_eq!(
-            get_host(&Uri::from_static("http://example.com")).ok(),
-            Some("example.com")
-        );
-        assert_eq!(
-            get_host(&Uri::from_static("http://1.2.3.4:80/test")).ok(),
-            Some("1.2.3.4")
-        );
-        assert_eq!(
-            get_host(&Uri::from_static("http://[::1]")).ok(),
-            Some("::1")
-        );
-        assert_eq!(
-            get_host(&Uri::from_static("http://[::1.2.3.4]:8080")).ok(),
-            Some("::1.2.3.4")
-        );
-        assert_eq!(
-            get_host(&Uri::from_static("http://[test.com]")).ok(),
-            Some("[test.com]")
-        );
     }
 }

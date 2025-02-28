@@ -17,13 +17,9 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 pub mod http;
-#[cfg(feature = "tokio-native-tls")]
-pub mod https;
 pub mod hyper_adapter;
 
 pub use self::http::{ConnectError, HttpConnection, HttpConnector};
-#[cfg(feature = "tokio-native-tls")]
-pub use self::https::{HttpOrHttpsConnection, HttpsConnector};
 pub use self::hyper_adapter::HyperConnectorAdapter;
 
 trait NetworkStream: AsyncRead + AsyncWrite + Connection + Unpin + Send + 'static {}

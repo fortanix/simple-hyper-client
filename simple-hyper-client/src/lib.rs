@@ -15,8 +15,6 @@ pub use self::connector::{
     ConnectError, HttpConnection, HttpConnector, HyperConnectorAdapter, NetworkConnection,
     NetworkConnector,
 };
-#[cfg(feature = "tokio-native-tls")]
-pub use self::connector::{HttpOrHttpsConnection, HttpsConnector};
 pub use self::error::Error;
 pub use self::shared_body::SharedBody;
 
@@ -25,3 +23,6 @@ pub use hyper::{self, Method, StatusCode, Uri, Version};
 
 pub type Request = hyper::Request<SharedBody>;
 pub type Response = hyper::Response<hyper::Body>;
+
+#[doc(hidden)]
+pub mod connector_impl;
