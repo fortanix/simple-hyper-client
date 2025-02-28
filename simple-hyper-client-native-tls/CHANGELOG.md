@@ -23,16 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-c1274bfc9f43f77b5a4fe612e78fa6db4d6b4aff/> decouple native-tls connector logic from simple-hyper-client
    - Move native-tls HttpsConnector logic into separate crate: `simple-hyper-client-native-tls`.
-- Convert repo into a rust workspace instead of single crate repo.
-- Bump minor version of `simple-hyper-client`.
-- Remove original CHANGELOG file.
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
- - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 1 commit contributed to the release.
+ - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -42,8 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
-    - Expose connector types at crate root ([`f6a4928`](https://github.com/fortanix/simple-hyper-client/commit/f6a4928f7fca8b5746de5d463f876f78b74a6dd9))
-    - Add changelog ([`96e112b`](https://github.com/fortanix/simple-hyper-client/commit/96e112b86843ed5732b17a3d909900db40cf3a93))
-    - Decouple native-tls connector logic from simple-hyper-client ([`c1274bf`](https://github.com/fortanix/simple-hyper-client/commit/c1274bfc9f43f77b5a4fe612e78fa6db4d6b4aff))
+    - Feat: decouple native-tls connector logic from simple-hyper-client ([`eae276d`](https://github.com/fortanix/simple-hyper-client/commit/eae276d75b2cb7831a40651fcd85db34a135f326))
 </details>
+
+<csr-unknown>
+Convert repo into a rust workspace instead of single crate repo.Bump minor version of simple-hyper-client.Remove original CHANGELOG file.<csr-unknown/>
 
