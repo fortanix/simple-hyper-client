@@ -22,6 +22,15 @@ Please check crate [`example`](./example/):
   - Use native-tls: `cargo run -p example --bin native_tls_client`
   - Use rustls: `cargo run -p example --bin rustls_client`
 
+## simple-hyper-client vs reqwest
+
+`reqwest` offers a lot of features on top of hyper, see [their readme](https://crates.io/crates/reqwest). This crate's features as follows:
+
+- Simpler HTTP client API compared to hyper's.
+- A blocking interface as well as the async one.
+- An optional (enabled by feature) TLS connector using native-tls.
+- Working great in no-std env.
+
 ## Contributing
 
 We gratefully accept bug reports and contributions from the community. By
