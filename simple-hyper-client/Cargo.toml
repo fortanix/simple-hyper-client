@@ -18,7 +18,7 @@ futures-executor = "0.3.21"
 headers = "0.3.7"
 http = "0.2.6"
 hyper = { version = "0.14.17", features = ["client", "http1", "http2", "stream"] }
-tokio = { version = "1.15.0", features = ["rt", "macros", "net", "sync", "time"] }
+tokio = { version = "1.45.0", features = ["rt", "macros", "net", "sync", "time"] }
 tokio-stream = "0.1.8"
 
 [dev-dependencies]
