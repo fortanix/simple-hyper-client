@@ -15,5 +15,5 @@ edition = "2018"
 
 [dependencies]
 simple-hyper-client = { version = "0.2.0", path = "../simple-hyper-client" }
-tokio = { version = "1.15.0", features = ["rt", "macros", "net", "sync", "time"] }
+tokio = { version = "1.45.1", features = ["rt", "macros", "net", "sync", "time"] }
 tokio-native-tls = { version = "0.3.0" }
