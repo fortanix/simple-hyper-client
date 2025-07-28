@@ -16,7 +16,7 @@ edition = "2018"
 [dependencies]
 rustls-pki-types = { version = "1.12.0" }
 simple-hyper-client = { version = "0.2.0", path = "../simple-hyper-client" }
-tokio = { version = "1.45.1", features = ["rt", "macros", "net", "sync", "time"] }
+tokio = { version = "1.47.0", features = ["rt", "macros", "net", "sync", "time"] }
 tokio-rustls = { version = "0.26.2" }
 
 [dev-dependencies]
