@@ -10,7 +10,7 @@ simple-hyper-client-native-tls = { version = "0.1.0", path = "../simple-hyper-cl
 simple-hyper-client-rustls = { version = "0.1.0", path = "../simple-hyper-client-rustls" }
 tokio = { version = "1.45.1"}
 tokio-native-tls = { version = "0.3.0" }
-tokio-rustls = { version = "0.26.2" }
+tokio-rustls = { version = "0.26.3" }
 webpki-roots = { version = "1.0.0" }
 
 
