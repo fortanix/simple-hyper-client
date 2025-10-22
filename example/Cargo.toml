@@ -13,6 +13,9 @@ tokio-native-tls = { version = "0.3.0" }
 tokio-rustls = { version = "0.26.2" }
 webpki-roots = { version = "1.0.0" }
 
+[features]
+tokio_block_in_place = ["simple-hyper-client/tokio_block_in_place"]
+
 
 [[bin]]
 name = "rustls_client"
