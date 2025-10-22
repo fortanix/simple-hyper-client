@@ -61,6 +61,7 @@ impl Body {
     }
 }
 
+#[cfg(not(feature = "tokio_block_in_place"))]
 impl io::Read for Body {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         if self.bytes.is_empty() {
@@ -68,6 +69,21 @@ impl io::Read for Body {
                 Some(Ok(bytes)) => {
                     self.bytes = bytes;
                 }
+                Some(Err(e)) => return Err(e),
+                None => return Ok(0),
+            }
+        }
+        (&mut self.bytes).reader().read(buf)
+    }
+}
+
+#[cfg(feature = "tokio_block_in_place")]
+impl io::Read for Body {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if self.bytes.is_empty() {
+            let next = tokio::task::block_in_place(|| self.rx.blocking_recv());
+            match next {
+                Some(Ok(bytes)) => self.bytes = bytes,
                 Some(Err(e)) => return Err(e),
                 None => return Ok(0),
             }
