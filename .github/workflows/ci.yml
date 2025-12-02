@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -72,7 +72,7 @@ jobs:
   #   runs-on: ubuntu-latest
   #   steps:
   #     - name: Checkout repository
-  #       uses: actions/checkout@v5
+  #       uses: actions/checkout@v6
   #     - name: Install Rust toolchain
   #       uses: dtolnay/rust-toolchain@stable
   #       with:
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
@@ -101,7 +101,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@nightly
@@ -122,6 +122,6 @@ jobs:
   #   name: semver
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v5
+  #     - uses: actions/checkout@v6
   #     - name: Check semver
   #       uses: obi1kenobi/cargo-semver-checks-action@v2
