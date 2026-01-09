@@ -16,7 +16,7 @@ edition = "2018"
 [dependencies]
 futures-executor = "0.3.21"
 headers = "0.3.7"
-http = "0.2.6"
+http = "1.4.0"
 hyper = { version = "0.14.17", features = ["client", "http1", "http2", "stream"] }
 tokio = { version = "1.45.1", features = ["rt", "macros", "net", "sync", "time"] }
 tokio-stream = "0.1.18"
