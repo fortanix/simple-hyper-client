@@ -11,7 +11,7 @@ simple-hyper-client-rustls = { version = "0.1.0", path = "../simple-hyper-client
 tokio = { version = "1.49.0"}
 tokio-native-tls = { version = "0.3.0" }
 tokio-rustls = { version = "0.26.4" }
-webpki-roots = { version = "1.0.5" }
+webpki-roots = { version = "1.0.6" }
 
 
 [[bin]]
