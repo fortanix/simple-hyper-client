@@ -14,7 +14,7 @@ categories = ["web-programming::http-client"]
 edition = "2018"
 
 [dependencies]
-futures-executor = "0.3.21"
+futures-executor = "0.3.32"
 headers = "0.3.7"
 http = "0.2.6"
 hyper = { version = "0.14.17", features = ["client", "http1", "http2", "stream"] }
