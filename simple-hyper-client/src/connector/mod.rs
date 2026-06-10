@@ -4,9 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use hyper::client::connect::{Connected, Connection};
 use hyper::service::Service;
 use hyper::Uri;
+use hyper_util::client::legacy::connect::{Connected, Connection};
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 use std::error::Error as StdError;
@@ -96,11 +96,62 @@ impl Service<Uri> for ConnectorAdapter {
     type Error = Box<dyn StdError + Send + Sync>;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
+    fn call(&self, uri: Uri) -> Self::Future {
+        self.0.connect(uri)
+    }
+}
+
+impl tower_service::Service<Uri> for ConnectorAdapter {
+    type Response = NetworkConnection;
+    type Error = Box<dyn StdError + Send + Sync>;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+
     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
     }
 
     fn call(&mut self, uri: Uri) -> Self::Future {
         self.0.connect(uri)
+    }
+}
+
+impl hyper::rt::Read for NetworkConnection {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        mut buf: hyper::rt::ReadBufCursor<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
+        // TODO: Avoid unsafe.
+        let mut tmp_buf = unsafe { ReadBuf::uninit(buf.as_mut()) };
+
+        let bytes_read = match AsyncRead::poll_read(self, cx, &mut tmp_buf) {
+            Poll::Ready(Ok(())) => tmp_buf.filled().len(),
+            other => return other,
+        };
+
+        unsafe { buf.advance(bytes_read) };
+
+        Poll::Ready(Ok(()))
+    }
+}
+
+impl hyper::rt::Write for NetworkConnection {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<Result<usize, std::io::Error>> {
+        AsyncWrite::poll_write(self, cx, buf)
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
+        AsyncWrite::poll_flush(self, cx)
+    }
+
+    fn poll_shutdown(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
+        AsyncWrite::poll_shutdown(self, cx)
     }
 }

@@ -6,10 +6,11 @@
 
 use super::client::KeepClientAlive;
 
+use futures_util::StreamExt;
+use http_body_util::BodyExt;
+use hyper::body::Body as HyperBody;
 use hyper::body::{Buf, Bytes};
-use hyper::Body as HyperBody;
 use tokio::sync::mpsc;
-use tokio_stream::StreamExt;
 
 use std::future::Future;
 use std::{fmt, io};
@@ -28,35 +29,54 @@ impl fmt::Debug for Body {
 }
 
 impl Body {
-    pub(super) fn new(
-        mut hyper_body: HyperBody,
-    ) -> (impl Future<Output = ()> + Send + 'static, Self) {
+    pub(super) fn new<T>(hyper_body: T) -> (impl Future<Output = ()> + Send + 'static, Self)
+    where
+        T: HyperBody + Send + 'static,
+        T::Data: Send + Into<Bytes>,
+        T::Error: std::error::Error + Send + Sync + 'static,
+    {
         let (tx, rx) = mpsc::channel(1);
+
         let fut = async move {
+            let mut stream = std::pin::pin!(hyper_body.into_data_stream());
+
             loop {
                 tokio::select! {
                     _ = tx.closed() => {
                         break; // body has been dropped.
                     }
-                    res = hyper_body.next() => {
+
+                    res = stream.next() => {
                         let res = match res {
                             None => break, // EOF
-                            Some(Ok(chunk)) if chunk.is_empty() => continue,
-                            Some(Ok(chunk)) => Ok(chunk),
+
+                            Some(Ok(chunk)) => {
+                                let chunk = chunk.into();
+
+                                if chunk.is_empty() {
+                                    continue;
+                                } else {
+                                    Ok(chunk)
+                                }
+                            }
+
                             Some(Err(e)) => Err(io::Error::new(io::ErrorKind::Other, e)),
                         };
-                        if let Err(_) = tx.send(res).await {
+
+                        if tx.send(res).await.is_err() {
                             break; // body has been dropped.
                         }
                     }
                 }
             }
         };
+
         let body = Body {
             keep_client_alive: KeepClientAlive::empty(),
             bytes: Bytes::new(),
             rx,
         };
+
         (fut, body)
     }
 }
@@ -79,10 +99,10 @@ impl io::Read for Body {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hyper::Body as HyperBody;
-    use std::future::Future;
-    use std::io::{self, Read};
-    use std::thread;
+    use http_body_util::{Channel, Full, StreamBody};
+    use hyper::body::Frame;
+    use std::io::Read;
+    use std::{future::Future, thread};
     use tokio::time::{self, Duration};
 
     fn run_future<F: Future<Output = ()> + Send + 'static>(fut: F) {
@@ -97,7 +117,7 @@ mod tests {
 
     #[test]
     fn single_chunk() {
-        let body = HyperBody::from("hello, world!");
+        let body = Full::new(&b"hello, world!"[..]);
         let (fut, mut reader) = Body::new(body);
         run_future(fut);
 
@@ -108,16 +128,16 @@ mod tests {
 
     #[test]
     fn multiple_chunks() {
-        let (mut sender, body) = HyperBody::channel();
+        let (mut sender, body) = Channel::<&[u8]>::new(5);
         let (fut, mut reader) = Body::new(body);
 
         run_future(async move {
             let h = tokio::spawn(fut);
 
-            sender.send_data("hello".into()).await.unwrap();
+            sender.send_data(b"hello").await.unwrap();
             time::sleep(Duration::from_millis(10)).await;
-            sender.send_data(", ".into()).await.unwrap();
-            sender.send_data("world!".into()).await.unwrap();
+            sender.send_data(b", ").await.unwrap();
+            sender.send_data(b"world!").await.unwrap();
 
             drop(sender);
             h.await.unwrap();
@@ -130,16 +150,16 @@ mod tests {
 
     #[test]
     fn with_empty_chunk() {
-        let (mut sender, body) = HyperBody::channel();
+        let (mut sender, body) = Channel::<&[u8]>::new(5);
         let (fut, mut reader) = Body::new(body);
 
         run_future(async move {
             let h = tokio::spawn(fut);
 
-            sender.send_data("hello".into()).await.unwrap();
+            sender.send_data(b"hello").await.unwrap();
             time::sleep(Duration::from_millis(10)).await;
-            sender.send_data("".into()).await.unwrap();
-            sender.send_data(", world!".into()).await.unwrap();
+            sender.send_data(b"").await.unwrap();
+            sender.send_data(b", world!").await.unwrap();
 
             drop(sender);
             h.await.unwrap();
@@ -152,14 +172,16 @@ mod tests {
 
     #[test]
     fn hyper_error() {
-        let chunks: Vec<Result<_, io::Error>> = vec![
-            Ok("hello"),
-            Ok(" "),
-            Ok("world"),
+        eprintln!("test");
+        let chunks: Vec<Result<&[u8], io::Error>> = vec![
+            Ok(b"hello"),
+            Ok(b" "),
+            Ok(b"world"),
             Err(io::ErrorKind::BrokenPipe.into()),
         ];
+        let chunks = chunks.into_iter().map(|res| res.map(Frame::data));
         let stream = futures_util::stream::iter(chunks);
-        let body = HyperBody::wrap_stream(stream);
+        let body = StreamBody::new(stream);
         let (fut, mut reader) = Body::new(body);
 
         run_future(fut);

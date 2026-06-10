@@ -4,13 +4,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use headers::HeaderMap;
-use hyper::body::{Buf, HttpBody};
+use hyper::body::{Body, Buf, Frame};
 
+use std::cmp;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use std::{cmp, io};
 
 /// This is an alternative to `hyper::Body` for use with HTTP `Request`s
 ///
@@ -85,28 +84,23 @@ impl From<&'static str> for SharedBody {
     }
 }
 
-impl HttpBody for SharedBody {
+impl Body for SharedBody {
     type Data = SharedBuf;
-    type Error = io::Error;
+    type Error = crate::Error;
 
-    fn poll_data(
+    fn poll_frame(
         self: Pin<&mut Self>,
         _cx: &mut Context<'_>,
-    ) -> Poll<Option<Result<Self::Data, Self::Error>>> {
+    ) -> Poll<Option<Result<Frame<Self::Data>, Self::Error>>> {
         let opt = self
             .get_mut()
             .0
             .take()
             .map(|bytes| SharedBuf { bytes, pos: 0 })
+            .map(Frame::data)
             .map(Ok);
-        Poll::Ready(opt)
-    }
 
-    fn poll_trailers(
-        self: Pin<&mut Self>,
-        _cx: &mut Context<'_>,
-    ) -> Poll<Result<Option<HeaderMap>, Self::Error>> {
-        Poll::Ready(Ok(None))
+        Poll::Ready(opt)
     }
 }
 
