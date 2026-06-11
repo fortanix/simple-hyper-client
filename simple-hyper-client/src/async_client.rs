@@ -103,13 +103,17 @@ pub struct ClientBuilder(HyperClientBuilder);
 
 impl Default for ClientBuilder {
     fn default() -> Self {
-        Self::new(HyperClientBuilder::new(TokioExecutor))
+        Self::new()
     }
 }
 
 impl ClientBuilder {
+    pub fn new() -> Self {
+        Self::from_hyper_client_builder(HyperClientBuilder::new(TokioExecutor))
+    }
+
     /// Create a builder with a configured instance of [`HyperClientBuilder`].
-    pub fn new(inner: HyperClientBuilder) -> Self {
+    pub fn from_hyper_client_builder(inner: HyperClientBuilder) -> Self {
         Self(inner)
     }
 
@@ -132,11 +136,6 @@ impl ClientBuilder {
     }
 
     /// Set whether the connection **must** use HTTP/2.
-    ///
-    /// The destination must either allow HTTP2 Prior Knowledge, or the
-    /// `Connect` should be configured to do use ALPN to upgrade to `h2`
-    /// as part of the connection process. This will not make the `Client`
-    /// utilize ALPN by itself.
     ///
     /// Note that setting this to true prevents HTTP/1 from being allowed.
     ///

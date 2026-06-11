@@ -113,9 +113,13 @@ impl Client {
 pub struct ClientBuilder(AsyncClientBuilder);
 
 impl ClientBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Create a builder with a configured instance of [`HyperClientBuilder`].
-    pub fn new(inner: HyperClientBuilder) -> Self {
-        ClientBuilder(AsyncClientBuilder::new(inner))
+    pub fn from_hyper_client_builder(inner: HyperClientBuilder) -> Self {
+        Self(AsyncClientBuilder::from_hyper_client_builder(inner))
     }
 
     /// Sets the maximum idle connection per host allowed in the pool.
@@ -137,11 +141,6 @@ impl ClientBuilder {
     }
 
     /// Set whether the connection **must** use HTTP/2.
-    ///
-    /// The destination must either allow HTTP2 Prior Knowledge, or the
-    /// `Connect` should be configured to do use ALPN to upgrade to `h2`
-    /// as part of the connection process. This will not make the `Client`
-    /// utilize ALPN by itself.
     ///
     /// Note that setting this to true prevents HTTP/1 from being allowed.
     ///

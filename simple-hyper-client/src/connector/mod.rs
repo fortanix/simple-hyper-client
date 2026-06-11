@@ -72,6 +72,48 @@ impl AsyncWrite for NetworkConnection {
     }
 }
 
+impl hyper::rt::Read for NetworkConnection {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        mut buf: hyper::rt::ReadBufCursor<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
+        // SAFETY: Never uninitialize any bytes that may have been initialized before.
+        let mut tmp_buf = unsafe { ReadBuf::uninit(buf.as_mut()) };
+
+        let bytes_read = match AsyncRead::poll_read(self, cx, &mut tmp_buf) {
+            Poll::Ready(Ok(())) => tmp_buf.filled().len(),
+            other => return other,
+        };
+
+        // SAFETY: Advance by exactly the number of bytes we've just initialized.
+        unsafe { buf.advance(bytes_read) };
+
+        Poll::Ready(Ok(()))
+    }
+}
+
+impl hyper::rt::Write for NetworkConnection {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<Result<usize, std::io::Error>> {
+        AsyncWrite::poll_write(self, cx, buf)
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
+        AsyncWrite::poll_flush(self, cx)
+    }
+
+    fn poll_shutdown(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
+        AsyncWrite::poll_shutdown(self, cx)
+    }
+}
+
 /// Network connector trait with type erasure
 pub trait NetworkConnector: Send + Sync + 'static {
     fn connect(
@@ -112,46 +154,5 @@ impl tower_service::Service<Uri> for ConnectorAdapter {
 
     fn call(&mut self, uri: Uri) -> Self::Future {
         self.0.connect(uri)
-    }
-}
-
-impl hyper::rt::Read for NetworkConnection {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        mut buf: hyper::rt::ReadBufCursor<'_>,
-    ) -> Poll<Result<(), std::io::Error>> {
-        // TODO: Avoid unsafe.
-        let mut tmp_buf = unsafe { ReadBuf::uninit(buf.as_mut()) };
-
-        let bytes_read = match AsyncRead::poll_read(self, cx, &mut tmp_buf) {
-            Poll::Ready(Ok(())) => tmp_buf.filled().len(),
-            other => return other,
-        };
-
-        unsafe { buf.advance(bytes_read) };
-
-        Poll::Ready(Ok(()))
-    }
-}
-
-impl hyper::rt::Write for NetworkConnection {
-    fn poll_write(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<Result<usize, std::io::Error>> {
-        AsyncWrite::poll_write(self, cx, buf)
-    }
-
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
-        AsyncWrite::poll_flush(self, cx)
-    }
-
-    fn poll_shutdown(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> Poll<Result<(), std::io::Error>> {
-        AsyncWrite::poll_shutdown(self, cx)
     }
 }
