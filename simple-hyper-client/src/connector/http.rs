@@ -6,8 +6,8 @@
 
 use crate::connector::{NetworkConnection, NetworkConnector};
 use crate::connector_impl::connect;
-use hyper::client::connect::{Connected, Connection};
 use hyper::Uri;
+use hyper_util::client::legacy::connect::{Connected, Connection};
 use std::error::Error as StdError;
 use std::future::Future;
 use std::pin::Pin;

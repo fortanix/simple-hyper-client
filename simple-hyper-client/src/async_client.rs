@@ -7,10 +7,10 @@
 use crate::connector::{ConnectorAdapter, NetworkConnector};
 use crate::error::Error;
 use crate::shared_body::SharedBody;
-use crate::Response;
+use crate::{HyperClient, HyperClientBuilder, Response};
 
 use headers::{ContentLength, Header, HeaderMap, HeaderMapExt};
-use hyper::{Client as HyperClient, Method, Request, Uri};
+use hyper::{Method, Request, Uri};
 
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
@@ -27,7 +27,7 @@ use std::time::Duration;
 /// let response = client.get("http://example.com/")?.send().await?;
 /// ```
 ///
-/// [hyper's `Client` type]: https://docs.rs/hyper/latest/hyper/client/struct.Client.html
+/// [hyper's `Client` type]: https://docs.rs/hyper-util/latest/hyper_util/client/legacy/struct.Client.html
 #[derive(Clone)]
 pub struct Client {
     inner: Arc<HyperClient<ConnectorAdapter, SharedBody>>,
@@ -56,12 +56,12 @@ macro_rules! define_method_fn {
 
 impl Client {
     pub fn builder() -> ClientBuilder {
-        ClientBuilder::new()
+        ClientBuilder::default()
     }
 
     /// Create a new `Client` using the specified connector.
     pub fn with_connector<C: NetworkConnector>(connector: C) -> Self {
-        ClientBuilder::new().build(connector)
+        ClientBuilder::default().build(connector)
     }
 
     /// This method can be used instead of [Client::request]
@@ -93,30 +93,35 @@ impl Client {
     define_method_fn!(delete, DELETE);
 }
 
-// NOTE: the default values are taken from https://docs.rs/hyper/0.13.10/hyper/client/struct.Builder.html
+// NOTE: the default values are taken from https://docs.rs/hyper-util/latest/hyper_util/client/legacy/struct.Builder.html
 // NOTE: not all configurable aspects of hyper Client are exposed here.
 /// A builder for [`Client`]
 ///
 /// [`Client`]: struct.Client.html
 #[derive(Clone)]
-pub struct ClientBuilder {
-    max_idle_per_host: usize,
-    idle_timeout: Option<Duration>,
+pub struct ClientBuilder(HyperClientBuilder);
+
+impl Default for ClientBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ClientBuilder {
-    pub(crate) fn new() -> Self {
-        ClientBuilder {
-            max_idle_per_host: usize::MAX,
-            idle_timeout: Some(Duration::from_secs(90)),
-        }
+    pub fn new() -> Self {
+        Self::from_hyper_client_builder(HyperClientBuilder::new(TokioExecutor))
+    }
+
+    /// Create a builder with a configured instance of [`HyperClientBuilder`].
+    pub fn from_hyper_client_builder(inner: HyperClientBuilder) -> Self {
+        Self(inner)
     }
 
     /// Sets the maximum idle connection per host allowed in the pool.
     ///
     /// Default is usize::MAX (no limit).
     pub fn pool_max_idle_per_host(&mut self, max_idle: usize) -> &mut Self {
-        self.max_idle_per_host = max_idle;
+        self.0.pool_max_idle_per_host(max_idle);
         self
     }
 
@@ -126,7 +131,17 @@ impl ClientBuilder {
     ///
     /// Default is 90 seconds.
     pub fn pool_idle_timeout(&mut self, val: Option<Duration>) -> &mut Self {
-        self.idle_timeout = val;
+        self.0.pool_idle_timeout(val);
+        self
+    }
+
+    /// Set whether the connection **must** use HTTP/2.
+    ///
+    /// Note that setting this to true prevents HTTP/1 from being allowed.
+    ///
+    /// Default is false.
+    pub fn http2_only(&mut self, val: bool) -> &mut Self {
+        self.0.http2_only(val);
         self
     }
 
@@ -134,13 +149,7 @@ impl ClientBuilder {
     /// `Client`.
     pub fn build<C: NetworkConnector>(&self, connector: C) -> Client {
         Client {
-            inner: Arc::new(
-                HyperClient::builder()
-                    .pool_max_idle_per_host(self.max_idle_per_host)
-                    .pool_idle_timeout(self.idle_timeout)
-                    .executor(TokioExecutor)
-                    .build(ConnectorAdapter::new(connector)),
-            ),
+            inner: Arc::new(self.0.build(ConnectorAdapter::new(connector))),
         }
     }
 }
@@ -268,8 +277,11 @@ impl<'a> RequestBuilder<'a> {
     }
 }
 
+/// The default executor to use with the native hyper client.
+///
+/// Based on the [`tokio`] runtime.
 #[derive(Copy, Clone)]
-pub(crate) struct TokioExecutor;
+pub struct TokioExecutor;
 
 impl<F> hyper::rt::Executor<F> for TokioExecutor
 where
@@ -285,8 +297,8 @@ where
 mod tests {
     use super::*;
     use crate::connector::HttpConnector;
+    use crate::util::to_bytes;
     use headers::ContentType;
-    use hyper::body::to_bytes;
     use hyper::StatusCode;
     use std::net::SocketAddr;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -352,9 +364,6 @@ mod tests {
         let connector = HttpConnector::new().connect_timeout(Some(Duration::from_millis(100)));
         let client = Client::with_connector(connector);
         let err = client.get(url).unwrap().send().await.unwrap_err();
-        assert_eq!(
-            err.to_string(),
-            "error trying to connect: I/O error: connection timed out"
-        );
+        assert_eq!(err.to_string(), "client error (Connect)");
     }
 }

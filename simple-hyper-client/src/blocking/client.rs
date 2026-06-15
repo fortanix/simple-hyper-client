@@ -14,6 +14,7 @@ use crate::shared_body::SharedBody;
 use futures_executor::block_on;
 use headers::{Header, HeaderMap, HeaderMapExt};
 use hyper::{Method, Uri};
+use hyper_util::client::legacy::Builder as HyperClientBuilder;
 use tokio::runtime;
 use tokio::sync::{mpsc, oneshot};
 
@@ -31,7 +32,7 @@ use std::time::Duration;
 /// let response = client.get("http://example.com/")?.send()?;
 /// ```
 ///
-/// [hyper's `Client` type]: https://docs.rs/hyper/latest/hyper/client/struct.Client.html
+/// [hyper's `Client` type]: https://docs.rs/hyper-util/latest/hyper_util/client/legacy/struct.Client.html
 #[derive(Clone)]
 pub struct Client {
     inner: Arc<ClientInner>,
@@ -59,7 +60,7 @@ macro_rules! define_method_fn {
         #[doc = " request with the specified URI."]
         ///
         /// Returns an error if `uri` is invalid.
-        pub fn $name<U>(&self, uri: U) -> Result<RequestBuilder, Error>
+        pub fn $name<U>(&self, uri: U) -> Result<RequestBuilder<'_>, Error>
         where
             Uri: TryFrom<U>,
             <Uri as TryFrom<U>>::Error: Into<http::Error>,
@@ -75,17 +76,17 @@ macro_rules! define_method_fn {
 
 impl Client {
     pub fn builder() -> ClientBuilder {
-        ClientBuilder::new()
+        ClientBuilder::default()
     }
 
     pub fn with_connector<C: NetworkConnector>(connector: C) -> Self {
-        ClientBuilder::new().build(connector)
+        ClientBuilder::default().build(connector)
     }
 
     /// Initiate a request with the specified method and URI.
     ///
     /// Returns an error if `uri` is invalid.
-    pub fn request<U>(&self, method: Method, uri: U) -> Result<RequestBuilder, Error>
+    pub fn request<U>(&self, method: Method, uri: U) -> Result<RequestBuilder<'_>, Error>
     where
         Uri: TryFrom<U>,
         <Uri as TryFrom<U>>::Error: Into<http::Error>,
@@ -108,12 +109,17 @@ impl Client {
 /// A builder for [`Client`].
 ///
 /// [`Client`]: struct.Client.html
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct ClientBuilder(AsyncClientBuilder);
 
 impl ClientBuilder {
-    fn new() -> Self {
-        ClientBuilder(AsyncClientBuilder::new())
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Create a builder with a configured instance of [`HyperClientBuilder`].
+    pub fn from_hyper_client_builder(inner: HyperClientBuilder) -> Self {
+        Self(AsyncClientBuilder::from_hyper_client_builder(inner))
     }
 
     /// Sets the maximum idle connection per host allowed in the pool.
@@ -131,6 +137,16 @@ impl ClientBuilder {
     /// Default is 90 seconds.
     pub fn pool_idle_timeout(&mut self, val: Option<Duration>) -> &mut Self {
         self.0.pool_idle_timeout(val);
+        self
+    }
+
+    /// Set whether the connection **must** use HTTP/2.
+    ///
+    /// Note that setting this to true prevents HTTP/1 from being allowed.
+    ///
+    /// Default is false.
+    pub fn http2_only(&mut self, val: bool) -> &mut Self {
+        self.0.http2_only(val);
         self
     }
 

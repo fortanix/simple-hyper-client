@@ -6,9 +6,9 @@
 
 use crate::connector::{NetworkConnection, NetworkConnector};
 
-use hyper::client::connect::Connection;
 use hyper::service::Service;
 use hyper::Uri;
+use hyper_util::client::legacy::connect::Connection;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::Mutex;
 

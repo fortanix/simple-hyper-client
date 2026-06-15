@@ -1,6 +1,6 @@
 [package]
 name = "simple-hyper-client-rustls"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Fortanix, Inc."]
 license = "MPL-2.0"
 description = """
@@ -14,10 +14,10 @@ categories = ["web-programming::http-client"]
 edition = "2018"
 
 [dependencies]
-rustls-pki-types = { version = "1.14.0" }
-simple-hyper-client = { version = "0.2.0", path = "../simple-hyper-client" }
-tokio = { version = "1.50.0", features = ["rt", "macros", "net", "sync", "time"] }
-tokio-rustls = { version = "0.26.4" }
+rustls-pki-types = { version = "1.14" }
+simple-hyper-client = { version = "0.3", path = "../simple-hyper-client" }
+tokio = { version = "1", features = ["rt", "macros", "net", "sync", "time"] }
+tokio-rustls = { version = "0.26" }
 
 [dev-dependencies]
-env_logger = "0.11.9"
+env_logger = "0.11"

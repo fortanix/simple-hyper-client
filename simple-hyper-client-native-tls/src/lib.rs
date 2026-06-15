@@ -6,8 +6,8 @@
 
 use simple_hyper_client::{ConnectError, HttpConnection, NetworkConnection, NetworkConnector};
 
+use simple_hyper_client::compat::{Connected, Connection};
 use simple_hyper_client::connector_impl;
-use simple_hyper_client::hyper::client::connect::{Connected, Connection};
 use simple_hyper_client::Uri;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio::net::TcpStream;

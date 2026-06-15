@@ -6,45 +6,16 @@
 
 use hyper::Method;
 
-use std::{error, fmt};
+pub type HyperClientError = hyper_util::client::legacy::Error;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
-    Http(http::Error),
-    Hyper(hyper::Error),
+    #[error(transparent)]
+    Http(#[from] http::Error),
+
+    #[error(transparent)]
+    Client(#[from] HyperClientError),
+
+    #[error("{0} requests are not allowed to have a body")]
     BodyNotAllowed(Method),
-}
-
-impl From<http::Error> for Error {
-    fn from(e: http::Error) -> Self {
-        Error::Http(e)
-    }
-}
-
-impl From<hyper::Error> for Error {
-    fn from(e: hyper::Error) -> Self {
-        Error::Hyper(e)
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            Error::Http(ref e) => write!(f, "{}", e),
-            Error::Hyper(ref e) => write!(f, "{}", e),
-            Error::BodyNotAllowed(ref m) => {
-                write!(f, "{} requests are not allowed to have a body", m)
-            }
-        }
-    }
-}
-
-impl error::Error for Error {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        match *self {
-            Error::Http(ref e) => Some(e),
-            Error::Hyper(ref e) => Some(e),
-            Error::BodyNotAllowed(_) => None,
-        }
-    }
 }
