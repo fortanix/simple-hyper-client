@@ -27,4 +27,5 @@ tower-service = "0.3"
 
 [dev-dependencies]
 http-body-util = { version = "0.1", features = ["channel"] }
+httparse = { version = "1" }
 futures-util = "0.3"

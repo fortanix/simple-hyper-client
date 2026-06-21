@@ -290,31 +290,34 @@ mod tests {
     use super::*;
     use crate::connector::HttpConnector;
     use crate::util::to_bytes;
-    use headers::ContentType;
+    use headers::{ContentLength, ContentType};
     use hyper::StatusCode;
     use std::net::SocketAddr;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpListener;
+    use tokio::sync::oneshot;
 
     const RESPONSE_OK: &str = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, world!\r\n";
     const RESPONSE_404: &str =
         "HTTP/1.1 404 Not Found\r\nContent-Length: 23\r\n\r\nResource was not found.\r\n";
 
-    async fn test_http_server(resp: &'static str) -> SocketAddr {
+    async fn test_http_server(resp: &'static str, body_tx: oneshot::Sender<Vec<u8>>) -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         tokio::spawn(async move {
             let (mut stream, _) = listener.accept().await.unwrap();
             let mut input = Vec::new();
-            stream.read(&mut input).await.unwrap();
             stream.write_all(resp.as_bytes()).await.unwrap();
+            stream.read_to_end(&mut input).await.unwrap();
+            let _ = body_tx.send(input);
         });
         addr
     }
 
     #[tokio::test]
     async fn http_client() {
-        let addr = test_http_server(RESPONSE_OK).await;
+        let (tx, rx) = oneshot::channel();
+        let addr = test_http_server(RESPONSE_OK, tx).await;
         let url = format!("http://{}/", addr);
 
         let connector = HttpConnector::new();
@@ -328,14 +331,34 @@ mod tests {
             .await
             .unwrap();
 
+        // Parse the request received by the server
+        let mut headers = [httparse::EMPTY_HEADER; 64];
+        let mut request = httparse::Request::new(&mut headers);
+        let req_buf = rx.await.unwrap();
+        let body_idx = request.parse(&req_buf).unwrap().unwrap();
+        assert_eq!(request.method, Some("POST"));
+        assert_eq!(request.path, Some("/"));
+        assert_eq!(request.version, Some(1));
+        let content_length = request
+            .headers
+            .iter()
+            .find(|header| header.name == ContentLength::name())
+            .unwrap();
+        assert_eq!(content_length.value, "15".as_bytes());
+        assert_eq!(
+            str::from_utf8(&req_buf[body_idx..]).unwrap(),
+            "{\"key\":\"value\"}"
+        );
+
         assert_eq!(response.status(), StatusCode::OK);
-        let body = to_bytes(response).await.unwrap();
-        assert_eq!(body, "Hello, world!".as_bytes());
+        let response_body = to_bytes(response).await.unwrap();
+        assert_eq!(response_body, "Hello, world!".as_bytes());
     }
 
     #[tokio::test]
     async fn drop_client_before_response() {
-        let addr = test_http_server(RESPONSE_404).await;
+        let (tx, _rx) = oneshot::channel();
+        let addr = test_http_server(RESPONSE_404, tx).await;
         let url = format!("http://{}/", addr);
 
         let connector = HttpConnector::new();

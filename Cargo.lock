@@ -1011,6 +1011,7 @@ dependencies = [
  "headers",
  "http",
  "http-body-util",
+ "httparse",
  "hyper",
  "hyper-util",
  "thiserror",
