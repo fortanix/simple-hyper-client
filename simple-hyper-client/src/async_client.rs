@@ -10,6 +10,7 @@ use crate::error::Error;
 use crate::{HyperClient, HyperClientBuilder, Response};
 
 use headers::{Header, HeaderMap, HeaderMapExt};
+use hyper::body::Body;
 use hyper::{Method, Request, Uri};
 
 use std::convert::{TryFrom, TryInto};
@@ -193,10 +194,12 @@ impl RequestDetails {
             Method::GET | Method::HEAD | Method::DELETE => false,
             _ => true,
         };
-        let body = match can_have_body {
-            true => self.body.unwrap_or_else(|| RequestBody::empty()),
-            false if self.body.is_some() => return Err(Error::BodyNotAllowed(self.method)),
-            false => RequestBody::empty(),
+        let body = if can_have_body {
+            self.body.unwrap_or_else(|| RequestBody::empty())
+        } else if self.body.is_some_and(|body| body.size_hint().lower() > 0) {
+            return Err(Error::BodyNotAllowed(self.method));
+        } else {
+            RequestBody::empty()
         };
         let mut req = Request::builder().method(self.method).uri(self.uri);
         match req.headers_mut() {
