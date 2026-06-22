@@ -4,11 +4,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+use derive_more::{IsVariant, TryUnwrap, Unwrap};
 use hyper::Method;
 
 pub type HyperClientError = hyper_util::client::legacy::Error;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, IsVariant, TryUnwrap, Unwrap)]
+#[try_unwrap(ref)]
+#[unwrap(ref)]
 pub enum Error {
     #[error(transparent)]
     Http(#[from] http::Error),
