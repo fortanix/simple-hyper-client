@@ -296,6 +296,7 @@ mod tests {
     use headers::{ContentLength, ContentType};
     use hyper::StatusCode;
     use std::net::SocketAddr;
+    use test_case::test_case;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpListener;
     use tokio::sync::oneshot;
@@ -356,6 +357,31 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let response_body = to_bytes(response).await.unwrap();
         assert_eq!(response_body, "Hello, world!".as_bytes());
+    }
+
+    #[test_case(Some(r#"{"key":"value"}"#.into()), false; "non-empty body not allowed")]
+    #[test_case(Some("".into()), true; "empty body allowed")]
+    #[test_case(None, true; "without body allowed")]
+    #[tokio::test]
+    async fn get_request(body: Option<RequestBody>, expect_ok: bool) {
+        let (tx, _rx) = oneshot::channel();
+        let addr = test_http_server(RESPONSE_OK, tx).await;
+        let url = format!("http://{}/", addr);
+
+        let connector = HttpConnector::new();
+        let client = Client::with_connector(connector);
+        let mut builder = client.get(url).unwrap();
+
+        if let Some(body) = body {
+            builder = builder.header(ContentType::json()).body(body);
+        }
+
+        let result = builder.send().await;
+        if expect_ok {
+            result.unwrap();
+        } else {
+            assert_eq!(result.unwrap_err().unwrap_body_not_allowed(), Method::GET);
+        }
     }
 
     #[tokio::test]

@@ -30,3 +30,4 @@ tower-service = "0.3"
 futures-util = "0.3"
 http-body-util = { version = "0.1", features = ["channel"] }
 httparse = "1"
+test-case = "3"
