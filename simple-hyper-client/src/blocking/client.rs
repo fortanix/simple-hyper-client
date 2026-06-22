@@ -7,9 +7,9 @@
 use super::body::Body;
 use super::Response;
 use crate::async_client::{ClientBuilder as AsyncClientBuilder, RequestDetails};
+use crate::body::RequestBody;
 use crate::connector::NetworkConnector;
 use crate::error::Error;
-use crate::shared_body::SharedBody;
 
 use futures_executor::block_on;
 use headers::{Header, HeaderMap, HeaderMapExt};
@@ -206,7 +206,7 @@ pub struct RequestBuilder<'a> {
 
 impl<'a> RequestBuilder<'a> {
     /// Set the request body.
-    pub fn body<B: Into<SharedBody>>(mut self, body: B) -> Self {
+    pub fn body<B: Into<RequestBody>>(mut self, body: B) -> Self {
         self.details.body = Some(body.into());
         self
     }

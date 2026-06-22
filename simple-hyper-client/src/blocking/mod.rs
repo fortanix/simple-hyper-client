@@ -10,7 +10,7 @@
 //! async tasks. Additionally, since the client holds a connection pool
 //! internally, it is advised that instances be reused as much as possible.
 
-use crate::shared_body::SharedBody;
+use crate::body::RequestBody;
 
 mod body;
 mod client;
@@ -18,5 +18,5 @@ mod client;
 pub use self::body::Body;
 pub use self::client::{Client, ClientBuilder, RequestBuilder};
 
-pub type Request = hyper::Request<SharedBody>;
+pub type Request = hyper::Request<RequestBody>;
 pub type Response = hyper::Response<Body>;
