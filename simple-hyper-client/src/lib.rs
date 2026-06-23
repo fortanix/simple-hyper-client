@@ -12,7 +12,7 @@ mod error;
 mod util;
 
 pub use self::async_client::*;
-pub use self::body::RequestBody;
+pub use self::body::{shared::SharedBody, RequestBody};
 pub use self::connector::{
     ConnectError, HttpConnection, HttpConnector, HyperConnectorAdapter, NetworkConnection,
     NetworkConnector,

@@ -4,15 +4,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+use self::shared::{SharedBody, SharedBuf};
+
 use http_body_util::combinators::BoxBody;
 use http_body_util::BodyExt;
 use hyper::body::{Body, Buf, Frame, SizeHint};
 
-use std::cmp;
 use std::error::Error;
 use std::pin::Pin;
-use std::sync::Arc;
 use std::task::{Context, Poll};
+
+pub(crate) mod shared;
 
 /// This is an implementation of `hyper::body::Body` for use with HTTP
 /// `Request`s.
@@ -23,14 +25,14 @@ use std::task::{Context, Poll};
 pub struct RequestBody(InnerBody);
 
 enum InnerBody {
-    Shared(Option<SharedBytes>),
+    Shared(SharedBody),
     Wrapped(BoxBody<Box<dyn Buf + Send + Sync>, Box<dyn Error + Send + Sync>>),
 }
 
 impl RequestBody {
     /// Create an empty request body.
     pub fn empty() -> Self {
-        Self(InnerBody::Shared(None))
+        SharedBody::empty().into()
     }
 
     /// Create a `RequestBody` from an arbitrary other `hyper::body::Body`.
@@ -56,35 +58,9 @@ impl Default for RequestBody {
     }
 }
 
-impl From<Arc<Vec<u8>>> for RequestBody {
-    fn from(arc: Arc<Vec<u8>>) -> Self {
-        Self(InnerBody::Shared(Some(SharedBytes::Arc(arc))))
-    }
-}
-
-impl From<Vec<u8>> for RequestBody {
-    fn from(vec: Vec<u8>) -> Self {
-        Self(InnerBody::Shared(Some(SharedBytes::Arc(Arc::new(vec)))))
-    }
-}
-
-impl From<String> for RequestBody {
-    fn from(s: String) -> Self {
-        Self(InnerBody::Shared(Some(SharedBytes::Arc(Arc::new(
-            s.into_bytes(),
-        )))))
-    }
-}
-
-impl From<&'static [u8]> for RequestBody {
-    fn from(slice: &'static [u8]) -> Self {
-        Self(InnerBody::Shared(Some(SharedBytes::Static(slice))))
-    }
-}
-
-impl From<&'static str> for RequestBody {
-    fn from(s: &'static str) -> Self {
-        Self(InnerBody::Shared(Some(SharedBytes::Static(s.as_bytes()))))
+impl<T: Into<SharedBody>> From<T> for RequestBody {
+    fn from(shared_body: T) -> Self {
+        Self(InnerBody::Shared(shared_body.into()))
     }
 }
 
@@ -97,14 +73,13 @@ impl Body for RequestBody {
         cx: &mut Context<'_>,
     ) -> Poll<Option<Result<Frame<Self::Data>, Self::Error>>> {
         match &mut self.get_mut().0 {
-            InnerBody::Shared(maybe_bytes) => {
-                let opt = maybe_bytes
-                    .take()
-                    .map(|bytes| Buffer::Shared(SharedBuf { bytes, pos: 0 }))
-                    .map(Frame::data)
-                    .map(Ok);
-                Poll::Ready(opt)
-            }
+            InnerBody::Shared(shared_body) => SharedBody::poll_frame(Pin::new(shared_body), cx)
+                .map(|opt| {
+                    opt.map(|res| {
+                        res.map(|frame| frame.map_data(|bytes| Buffer::Shared(bytes)))
+                            .map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)
+                    })
+                }),
 
             InnerBody::Wrapped(box_body) => {
                 BoxBody::poll_frame(Pin::new(box_body), cx).map(|opt| {
@@ -116,20 +91,14 @@ impl Body for RequestBody {
 
     fn is_end_stream(&self) -> bool {
         match &self.0 {
-            InnerBody::Shared(maybe_bytes) => maybe_bytes.is_none(),
+            InnerBody::Shared(shared_body) => shared_body.is_end_stream(),
             InnerBody::Wrapped(box_body) => box_body.is_end_stream(),
         }
     }
 
     fn size_hint(&self) -> SizeHint {
         match &self.0 {
-            InnerBody::Shared(maybe_bytes) => {
-                let len = maybe_bytes
-                    .as_ref()
-                    .map(SharedBytes::len)
-                    .unwrap_or_default();
-                SizeHint::with_exact(len as u64)
-            }
+            InnerBody::Shared(shared_body) => shared_body.size_hint(),
             InnerBody::Wrapped(box_body) => box_body.size_hint(),
         }
     }
@@ -160,48 +129,6 @@ impl Buf for Buffer {
         match self {
             Self::Shared(shared_buf) => shared_buf.advance(cnt),
             Self::Wrapped(bytes) => bytes.advance(cnt),
-        }
-    }
-}
-
-pub struct SharedBuf {
-    bytes: SharedBytes,
-    pos: usize,
-}
-
-impl SharedBuf {
-    fn len(&self) -> usize {
-        self.bytes.len()
-    }
-}
-
-impl Buf for SharedBuf {
-    fn remaining(&self) -> usize {
-        self.len() - self.pos
-    }
-
-    fn chunk(&self) -> &[u8] {
-        match self.bytes {
-            SharedBytes::Arc(ref bytes) => &bytes[self.pos..],
-            SharedBytes::Static(ref bytes) => &bytes[self.pos..],
-        }
-    }
-
-    fn advance(&mut self, cnt: usize) {
-        self.pos = cmp::min(self.len(), self.pos + cnt);
-    }
-}
-
-enum SharedBytes {
-    Arc(Arc<Vec<u8>>),
-    Static(&'static [u8]),
-}
-
-impl SharedBytes {
-    fn len(&self) -> usize {
-        match self {
-            Self::Arc(ref bytes) => bytes.len(),
-            Self::Static(ref bytes) => bytes.len(),
         }
     }
 }
