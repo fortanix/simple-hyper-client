@@ -8,7 +8,7 @@ use self::shared::{SharedBody, SharedBuf};
 
 use http_body_util::combinators::BoxBody;
 use http_body_util::BodyExt;
-use hyper::body::{Body, Buf, Frame, SizeHint};
+use hyper::body::{Body, Buf, Bytes, Frame, SizeHint};
 
 use std::error::Error;
 use std::pin::Pin;
@@ -21,12 +21,12 @@ pub(crate) mod shared;
 ///
 /// This can be constructed from `Arc<Vec<u8>>`, allowing the data to be
 /// shared. The type can also wrap arbitrary other `hyper::body::Body`
-/// instances.
+/// instances, as long as they have `Bytes` as their `Data` associated type.
 pub struct RequestBody(InnerBody);
 
 enum InnerBody {
     Shared(SharedBody),
-    Wrapped(BoxBody<Box<dyn Buf + Send + Sync>, Box<dyn Error + Send + Sync>>),
+    Wrapped(BoxBody<Bytes, Box<dyn Error + Send + Sync>>),
 }
 
 impl RequestBody {
@@ -36,15 +36,18 @@ impl RequestBody {
     }
 
     /// Create a `RequestBody` from an arbitrary other `hyper::body::Body`.
-    pub fn wrap<B, D, E>(body: B) -> Self
+    pub fn wrap<B, E>(body: B) -> Self
     where
-        B: Body<Data = D, Error = E> + Send + Sync + 'static,
-        D: Buf + Send + Sync + 'static,
+        B: Body<Data = Bytes, Error = E> + Send + Sync + 'static,
         E: Error + Send + Sync + 'static,
     {
+        // Note: we do not support wrapping bodies with arbitrary `Buf`s as their
+        // `Data` associated type, because that would require us to call
+        // `BodyExt::map_frame()`, which returns a body type that does not provide
+        // accurate size hints, which can affect the transfer-encoding and
+        // content-length headers sent along with the request.
         Self(InnerBody::Wrapped(
-            body.map_frame(|f| f.map_data(|d| Box::new(d) as Box<dyn Buf + Send + Sync>))
-                .map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)
+            body.map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)
                 .boxed(),
         ))
     }
@@ -107,7 +110,7 @@ impl Body for RequestBody {
 /// The `hyper::body::Body::Data` type for a [`RequestBody`].
 pub enum Buffer {
     Shared(SharedBuf),
-    Wrapped(Box<dyn Buf + Send + Sync>),
+    Wrapped(Bytes),
 }
 
 impl Buf for Buffer {

@@ -293,13 +293,16 @@ mod tests {
     use super::*;
     use crate::connector::HttpConnector;
     use crate::util::to_bytes;
+
     use headers::{ContentLength, ContentType};
+    use hyper::body::Bytes;
     use hyper::StatusCode;
-    use std::net::SocketAddr;
     use test_case::test_case;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpListener;
     use tokio::sync::oneshot;
+
+    use std::net::SocketAddr;
 
     const RESPONSE_OK: &str = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, world!\r\n";
     const RESPONSE_404: &str =
@@ -409,5 +412,28 @@ mod tests {
         let client = Client::with_connector(connector);
         let err = client.get(url).unwrap().send().await.unwrap_err();
         assert_eq!(err.to_string(), "client error (Connect)");
+    }
+
+    #[test]
+    fn wrapped_body_size_hint() {
+        let body = http_body_util::Full::new(Bytes::from_static(r#"{"key":"value"}"#.as_bytes()));
+        let unwrapped_size_hint = body.size_hint();
+
+        let request = Client::with_connector(HttpConnector::new())
+            .post("https://localhost/")
+            .unwrap()
+            .header(ContentType::json())
+            .body(RequestBody::wrap(body))
+            .build()
+            .unwrap();
+
+        assert_eq!(
+            request.body().size_hint().lower(),
+            unwrapped_size_hint.lower()
+        );
+        assert_eq!(
+            request.body().size_hint().upper(),
+            unwrapped_size_hint.upper()
+        );
     }
 }
