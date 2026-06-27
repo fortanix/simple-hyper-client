@@ -26,7 +26,7 @@ pub enum Error {
 
 fn render_source_error(err: &HyperClientError) -> String {
     if let Some(err) = error::Error::source(err) {
-        format!(": {err:?}")
+        format!(": {err}")
     } else {
         Default::default()
     }
