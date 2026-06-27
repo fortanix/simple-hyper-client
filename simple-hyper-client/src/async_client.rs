@@ -411,7 +411,10 @@ mod tests {
         let connector = HttpConnector::new().connect_timeout(Some(Duration::from_millis(100)));
         let client = Client::with_connector(connector);
         let err = client.get(url).unwrap().send().await.unwrap_err();
-        assert_eq!(err.to_string(), "client error (Connect)");
+        assert_eq!(
+            err.to_string(),
+            "client error (Connect): I/O error: connection timed out"
+        );
     }
 
     #[test]
