@@ -6,6 +6,7 @@
 
 use derive_more::{IsVariant, TryUnwrap, Unwrap};
 use hyper::Method;
+use std::error;
 
 pub type HyperClientError = hyper_util::client::legacy::Error;
 
@@ -16,9 +17,17 @@ pub enum Error {
     #[error(transparent)]
     Http(#[from] http::Error),
 
-    #[error(transparent)]
+    #[error("{0}{source}", source = render_source_error(.0))]
     Client(#[from] HyperClientError),
 
     #[error("{0} requests are not allowed to have a body")]
     BodyNotAllowed(Method),
+}
+
+fn render_source_error(err: &HyperClientError) -> String {
+    if let Some(err) = error::Error::source(err) {
+        format!(": {err:?}")
+    } else {
+        Default::default()
+    }
 }
