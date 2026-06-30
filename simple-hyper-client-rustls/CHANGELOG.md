@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.2.0 (2026-06-30)
 
 ### Changed
 
@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 22 commits contributed to the release.
- - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 24 commits contributed to the release.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Merge pull request #89 from fortanix/pieagt/update-changelogs ([`1a80346`](https://github.com/fortanix/simple-hyper-client/commit/1a80346c669024563facb2ef3668339a9154d03a))
+    - Update changelog ([`d7c2d5a`](https://github.com/fortanix/simple-hyper-client/commit/d7c2d5a7dc386975b046e0e9c27d6a5c3f0b0a68))
     - Merge pull request #78 from fortanix/ivan/upgrade-hyper-to-v1 ([`9cbf6a4`](https://github.com/fortanix/simple-hyper-client/commit/9cbf6a49df1da48445f42cc67794c126125ff066))
     - Upgrade `hyper` to v1 ([`f7c53d5`](https://github.com/fortanix/simple-hyper-client/commit/f7c53d53eced71c250ad703379d17893685d9745))
     - Merge pull request #60 from fortanix/dependabot/cargo/tokio-1.50.0 ([`1de4130`](https://github.com/fortanix/simple-hyper-client/commit/1de4130ca0b704f641daeb63ba67b7d686a8fdfe))
@@ -54,8 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- <csr-id-172270d826a1ddc94bb455be1f59f22b54a89544/> add simple-hyper-client-rustls
-  - Add  simple-hyper-client-rustls crate for help using simple-hyper-client with tokio-rustls.
+ - <csr-id-172270d826a1ddc94bb455be1f59f22b54a89544/> add simple-hyper-client-rustls
+   - Add  simple-hyper-client-rustls crate for help using simple-hyper-client with tokio-rustls.
 
 ### Commit Statistics
 

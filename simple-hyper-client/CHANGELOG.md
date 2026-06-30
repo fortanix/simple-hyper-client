@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.3.0 (2026-06-30)
 
 ### Changed
 
@@ -16,8 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 29 commits contributed to the release.
- - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 31 commits contributed to the release.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Merge pull request #89 from fortanix/pieagt/update-changelogs ([`1a80346`](https://github.com/fortanix/simple-hyper-client/commit/1a80346c669024563facb2ef3668339a9154d03a))
+    - Update changelog ([`d7c2d5a`](https://github.com/fortanix/simple-hyper-client/commit/d7c2d5a7dc386975b046e0e9c27d6a5c3f0b0a68))
     - Merge pull request #86 from fortanix/fix/improve-error-messages ([`7d8664f`](https://github.com/fortanix/simple-hyper-client/commit/7d8664fc52bf36aceffb5ff1828bd429f2f4a6b3))
     - Use `Display` for the source error ([`9f42129`](https://github.com/fortanix/simple-hyper-client/commit/9f42129db7b996152e411f0648e93b1118d39747))
     - Improve error messages ([`5ba8bb7`](https://github.com/fortanix/simple-hyper-client/commit/5ba8bb7637416102c27af653b6bb717f093cba47))
