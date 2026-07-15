@@ -36,7 +36,7 @@ where
     S: Service<Uri, Response = T> + Send + 'static,
     S::Error: Into<Box<dyn StdError + Send + Sync>>,
     S::Future: Unpin + Send,
-    T: AsyncRead + AsyncWrite + Connection + Unpin + Send + 'static,
+    T: AsyncRead + AsyncWrite + Connection + Unpin + Send + Sync + 'static,
 {
     fn connect(
         &self,

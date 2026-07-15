@@ -42,6 +42,17 @@ impl HttpConnector {
         self.connect_timeout = timeout;
         self
     }
+
+    /// Connects to an endpoint and returns a [`TcpStream`] for the connection.
+    pub async fn connect_raw(
+        &self,
+        uri: Uri,
+    ) -> Result<TcpStream, Box<dyn StdError + Send + Sync>> {
+        connect(uri, false, self.connect_timeout)
+            .await
+            .map(|conn| conn.into_tcp_stream())
+            .map_err(|err| Box::new(err) as _)
+    }
 }
 
 impl NetworkConnector for HttpConnector {

@@ -22,9 +22,12 @@ pub mod hyper_adapter;
 pub use self::http::{ConnectError, HttpConnection, HttpConnector};
 pub use self::hyper_adapter::HyperConnectorAdapter;
 
-trait NetworkStream: AsyncRead + AsyncWrite + Connection + Unpin + Send + 'static {}
+trait NetworkStream: AsyncRead + AsyncWrite + Connection + Unpin + Send + Sync + 'static {}
 
-impl<T> NetworkStream for T where T: AsyncRead + AsyncWrite + Connection + Unpin + Send + 'static {}
+impl<T> NetworkStream for T where
+    T: AsyncRead + AsyncWrite + Connection + Unpin + Send + Sync + 'static
+{
+}
 
 /// A boxed network connection
 pub struct NetworkConnection(Box<dyn NetworkStream>);
@@ -32,7 +35,7 @@ pub struct NetworkConnection(Box<dyn NetworkStream>);
 impl NetworkConnection {
     pub fn new<S>(stream: S) -> Self
     where
-        S: AsyncRead + AsyncWrite + Connection + Unpin + Send + 'static,
+        S: AsyncRead + AsyncWrite + Connection + Unpin + Send + Sync + 'static,
     {
         NetworkConnection(Box::new(stream))
     }
