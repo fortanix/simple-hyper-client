@@ -14,7 +14,7 @@ categories = ["web-programming::http-client"]
 edition = "2018"
 
 [dependencies]
-derive_more = { version = "2", features = ["is_variant", "try_unwrap", "unwrap"] }
+derive_more = { version = "1", features = ["is_variant", "try_unwrap", "unwrap"] }
 futures-executor = "0.3"
 futures-util = "0.3"
 headers = "0.4"
