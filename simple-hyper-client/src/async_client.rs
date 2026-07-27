@@ -12,6 +12,7 @@ use crate::{HyperClient, HyperClientBuilder, Response};
 use headers::{Header, HeaderMap, HeaderMapExt};
 use hyper::body::Body;
 use hyper::{Method, Request, Uri};
+use hyper_util::rt::TokioTimer;
 
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
@@ -110,7 +111,13 @@ impl Default for ClientBuilder {
 
 impl ClientBuilder {
     pub fn new() -> Self {
-        Self::from_hyper_client_builder(HyperClientBuilder::new(TokioExecutor))
+        let mut native_client = HyperClientBuilder::new(TokioExecutor);
+
+        native_client
+            .timer(TokioTimer::new())
+            .pool_timer(TokioTimer::new());
+
+        Self::from_hyper_client_builder(native_client)
     }
 
     /// Create a builder with a configured instance of [`HyperClientBuilder`].

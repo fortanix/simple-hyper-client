@@ -11,7 +11,7 @@ mod connector;
 mod error;
 mod util;
 
-pub use self::async_client::*;
+pub use self::async_client::{Client, ClientBuilder, RequestBuilder, TokioExecutor};
 pub use self::body::{shared::SharedBody, RequestBody};
 pub use self::connector::{
     ConnectError, HttpConnection, HttpConnector, HyperConnectorAdapter, NetworkConnection,
@@ -19,6 +19,7 @@ pub use self::connector::{
 };
 pub use self::error::{Error, HyperClientError};
 pub use self::util::{aggregate, to_bytes};
+pub use hyper_util::rt::TokioTimer;
 
 pub use hyper::body::{Body, Buf, Bytes, Incoming};
 pub use hyper::{self, Method, StatusCode, Uri, Version};
