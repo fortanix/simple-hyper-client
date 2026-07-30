@@ -18,7 +18,7 @@ use std::task::{Context, Poll};
 /// This can be constructed from `Arc<Vec<u8>>`, allowing the data to be
 /// shared. It also implements `Clone` and `AsRef<[u8]>`, and it provides a
 /// method to get its length and implements.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct SharedBody(Option<SharedBytes>);
 
 impl SharedBody {
@@ -31,6 +31,15 @@ impl SharedBody {
     /// Returns the length of the body in bytes.
     pub fn len(&self) -> usize {
         self.0.as_ref().map(SharedBytes::len).unwrap_or_default()
+    }
+}
+
+impl Default for SharedBody {
+    fn default() -> Self {
+        // Note: this is different from `Self(None)` because `Self(None)` would immediately
+        // return `false` for `is_end_stream()` while `Self(Some(SharedBytes::Static(&[])))`
+        // returns `true` for `is_end_stream()` until the first call to `poll_frame()`.
+        Self(Some(SharedBytes::Static(&[])))
     }
 }
 

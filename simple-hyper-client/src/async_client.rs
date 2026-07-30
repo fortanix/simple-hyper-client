@@ -293,6 +293,7 @@ mod tests {
     use super::*;
     use crate::connector::HttpConnector;
     use crate::util::to_bytes;
+    use crate::SharedBody;
 
     use headers::{ContentLength, ContentType};
     use hyper::body::Bytes;
@@ -321,11 +322,16 @@ mod tests {
         addr
     }
 
+    #[test_case(r#"{"key":"value"}"#; "with body")]
+    #[test_case(SharedBody::empty(); "without body")]
     #[tokio::test]
-    async fn http_client() {
+    async fn http_client<B: Into<SharedBody>>(req_body: B) {
         let (tx, rx) = oneshot::channel();
         let addr = test_http_server(RESPONSE_OK, tx).await;
         let url = format!("http://{}/", addr);
+
+        let req_body = req_body.into();
+        let expected_content_length = req_body.size_hint().exact();
 
         let connector = HttpConnector::new();
         let client = Client::with_connector(connector);
@@ -333,7 +339,7 @@ mod tests {
             .post(url)
             .unwrap()
             .header(ContentType::json())
-            .body(r#"{"key":"value"}"#)
+            .body(req_body.clone())
             .send()
             .await
             .unwrap();
@@ -349,13 +355,16 @@ mod tests {
         let content_length = request
             .headers
             .iter()
-            .find(|header| header.name == ContentLength::name())
-            .unwrap();
-        assert_eq!(content_length.value, "15".as_bytes());
-        assert_eq!(
-            str::from_utf8(&req_buf[body_idx..]).unwrap(),
-            "{\"key\":\"value\"}"
-        );
+            .find(|header| header.name == ContentLength::name());
+        if let Some(expected_content_length) = expected_content_length {
+            assert_eq!(
+                content_length.unwrap().value,
+                expected_content_length.to_string().as_bytes()
+            );
+        } else {
+            assert_eq!(content_length, None);
+        }
+        assert_eq!(&req_buf[body_idx..], req_body.as_ref());
 
         assert_eq!(response.status(), StatusCode::OK);
         let response_body = to_bytes(response).await.unwrap();
