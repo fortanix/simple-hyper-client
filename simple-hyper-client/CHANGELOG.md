@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.3.1 (2026-07-30)
+
+### Fixed
+
+ - <csr-id-2a3a74e8a721bd0632677b0219a91589c6cb76cd/> ensure content-length request header is sent for SharedBody::empty()
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 29 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Bump version number to 0.3.1 ([`a003b30`](https://github.com/fortanix/simple-hyper-client/commit/a003b30c6722eabf366c9523eb121ca2190f7deb))
+    - Ensure content-length request header is sent for SharedBody::empty() ([`2a3a74e`](https://github.com/fortanix/simple-hyper-client/commit/2a3a74e8a721bd0632677b0219a91589c6cb76cd))
+</details>
+
 ## 0.3.0 (2026-06-30)
 
 ### Changed
