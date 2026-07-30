@@ -37,8 +37,8 @@ impl SharedBody {
 impl Default for SharedBody {
     fn default() -> Self {
         // Note: this is different from `Self(None)` because `Self(None)` would immediately
-        // return `false` for `is_end_stream()` while `Self(Some(SharedBytes::Static(&[])))`
-        // returns `true` for `is_end_stream()` until the first call to `poll_frame()`.
+        // return `true` for `is_end_stream()` while `Self(Some(SharedBytes::Static(&[])))`
+        // returns `false` for `is_end_stream()` until the first call to `poll_frame()`.
         Self(Some(SharedBytes::Static(&[])))
     }
 }
