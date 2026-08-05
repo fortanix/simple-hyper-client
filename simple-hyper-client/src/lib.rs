@@ -15,7 +15,7 @@ pub use self::async_client::{Client, ClientBuilder, RequestBuilder, TokioExecuto
 pub use self::body::{shared::SharedBody, RequestBody};
 pub use self::connector::{
     ConnectError, HttpConnection, HttpConnector, HyperConnectorAdapter, NetworkConnection,
-    NetworkConnector,
+    NetworkConnector, NetworkStream,
 };
 pub use self::error::{Error, HyperClientError};
 pub use self::util::{aggregate, to_bytes};

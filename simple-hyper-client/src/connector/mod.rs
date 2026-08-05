@@ -22,7 +22,10 @@ pub mod hyper_adapter;
 pub use self::http::{ConnectError, HttpConnection, HttpConnector};
 pub use self::hyper_adapter::HyperConnectorAdapter;
 
-trait NetworkStream: AsyncRead + AsyncWrite + Connection + Unpin + Send + Sync + 'static {}
+pub trait NetworkStream:
+    AsyncRead + AsyncWrite + Connection + Unpin + Send + Sync + 'static
+{
+}
 
 impl<T> NetworkStream for T where
     T: AsyncRead + AsyncWrite + Connection + Unpin + Send + Sync + 'static
