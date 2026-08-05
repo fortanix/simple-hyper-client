@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.0 (2026-08-05)
+
+### Changed
+
+ - <csr-id-ae1ab10f797a624adaa9faeaf50a63bc0bad3f05/> export `NetworkStream` trait
+ - <csr-id-67f73c65a05288e12dcac2a49063b94569725d03/> re-export `TokioTimer`
+ - <csr-id-2c4b8ca5d113502f52528bd162746a28a39fb1c1/> relax dependency requirements
+ - <csr-id-e8c4ab7d9585ba23dc5445fe277b7dbdc5071683/> stricter stream trait bounds
+
 ## 0.3.1 (2026-07-30)
 
 ### Fixed
