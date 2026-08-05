@@ -1,6 +1,6 @@
 [package]
 name = "simple-hyper-client-rustls"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Fortanix, Inc."]
 license = "MPL-2.0"
 description = """
@@ -15,7 +15,7 @@ edition = "2018"
 
 [dependencies]
 rustls-pki-types = { version = "1.14" }
-simple-hyper-client = { version = "0.3", path = "../simple-hyper-client" }
+simple-hyper-client = { version = ">=0.3,<0.5", path = "../simple-hyper-client" }
 tokio = { version = "1", features = ["rt", "macros", "net", "sync", "time"] }
 tokio-rustls = { version = "0.26" }
 
